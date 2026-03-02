@@ -29,10 +29,16 @@ using System.Drawing;
 using NSMBe5.Plugin;
 using System.Linq;
 using NSMBe5.TilemapEditor;
+using System.Runtime.InteropServices;
 
 namespace NSMBe5 {
     public partial class LevelChooser : Form
     {
+        private const int SB_HORZ = 0;
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowScrollBar(IntPtr hWnd, int wBar, bool bShow);
+
         public static ImageManagerWindow imgMgr;
         public TextInputForm textForm = new TextInputForm();
         // init has to be used because Winforms is setting the value of autoBackupTime before the form loads
@@ -1443,6 +1449,7 @@ namespace NSMBe5 {
             try
             {
                 if (this.projectsPanel == null) return;
+                EnsureProjectsPanelNoHorizontalScroll();
 
                 this.projectsPanel.Controls.Clear();
                 var recentFiles = GetRecentFiles();
@@ -1473,7 +1480,35 @@ namespace NSMBe5 {
                         }
                         var card = CreateProjectCard(f);
                         this.projectsPanel.Controls.Add(card);
+                        this.projectsPanel.SetFlowBreak(card, true);
                     }
+                }
+                EnsureProjectsPanelNoHorizontalScroll();
+            }
+            catch { }
+        }
+
+        private int GetProjectsCardWidth()
+        {
+            if (this.projectsPanel == null) return 440;
+            int safety = 2;
+            int reservedForVScroll = SystemInformation.VerticalScrollBarWidth;
+            int width = this.projectsPanel.ClientSize.Width - reservedForVScroll - safety;
+            return Math.Max(240, width);
+        }
+
+        private void EnsureProjectsPanelNoHorizontalScroll()
+        {
+            if (this.projectsPanel == null) return;
+            try
+            {
+                this.projectsPanel.HorizontalScroll.Maximum = 0;
+                this.projectsPanel.HorizontalScroll.Visible = false;
+                this.projectsPanel.HorizontalScroll.Enabled = false;
+
+                if (this.projectsPanel.IsHandleCreated)
+                {
+                    ShowScrollBar(this.projectsPanel.Handle, SB_HORZ, false);
                 }
             }
             catch { }
@@ -1481,7 +1516,7 @@ namespace NSMBe5 {
 
         private Panel CreateProjectCard(string filePath)
         {
-            int cardWidth = (this.projectsPanel != null) ? Math.Max(280, this.projectsPanel.ClientSize.Width - 24) : 440;
+            int cardWidth = GetProjectsCardWidth();
             var panel = new Panel
             {
                 Width = cardWidth,
@@ -1666,11 +1701,19 @@ namespace NSMBe5 {
             if (this.projectsPanel == null) return;
             try
             {
+                // Adjust searchBox width to be responsive relative to the panel width
+                if (this.searchBox != null && this.addProjectButton != null)
+                {
+                    int availableWidth = this.projectsPanel.Width - this.addProjectButton.Width - 32;
+                    this.searchBox.Width = Math.Max(100, availableWidth);
+                }
+
                 foreach (Control c in this.projectsPanel.Controls)
                 {
                     if (c is Panel panel)
                     {
-                        int newWidth = Math.Max(240, this.projectsPanel.ClientSize.Width - 24);
+                        this.projectsPanel.SetFlowBreak(panel, true);
+                        int newWidth = GetProjectsCardWidth();
                         panel.Width = newWidth;
                         // adjust child controls positions/sizes
                         foreach (Control child in panel.Controls)
@@ -1697,6 +1740,7 @@ namespace NSMBe5 {
                         }
                     }
                 }
+                EnsureProjectsPanelNoHorizontalScroll();
             }
             catch { }
         }
