@@ -18,6 +18,7 @@
 using System;
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows.Forms;
 using System.IO;
 using NSMBe5.DSFileSystem;
@@ -1391,6 +1392,36 @@ namespace NSMBe5 {
                     Properties.Settings.Default.Save();
                     UpdateRecentFilesMenu();
                 }
+            }
+        }
+
+        private void RecentFilesListBox_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (recentFilesListBox == null) return;
+            if (e.Button == MouseButtons.Right)
+            {
+                int idx = recentFilesListBox.IndexFromPoint(e.Location);
+                if (idx >= 0 && idx < recentFilesListBox.Items.Count)
+                    recentFilesListBox.SelectedIndex = idx;
+                else
+                    recentFilesListBox.ClearSelected();
+            }
+        }
+
+        private void RecentFilesContextMenu_Opening(object sender, CancelEventArgs e)
+        {
+            if (recentFilesListBox == null) { e.Cancel = true; return; }
+            if (recentFilesListBox.SelectedItem is string filePath)
+            {
+                // enable items only when an existing file is selected
+                bool exists = System.IO.File.Exists(filePath);
+                showInExplorerToolStripMenuItem.Enabled = exists;
+                removeProjectToolStripMenuItem.Enabled = true;
+            }
+            else
+            {
+                // cancel opening if nothing selected
+                e.Cancel = true;
             }
         }
 

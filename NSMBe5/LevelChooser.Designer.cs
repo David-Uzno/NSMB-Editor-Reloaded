@@ -288,6 +288,8 @@ namespace NSMBe5 {
 			this.removeProjectToolStripMenuItem.Size = new System.Drawing.Size(210, 22);
 			this.removeProjectToolStripMenuItem.Text = "Remove project from list";
 			this.removeProjectToolStripMenuItem.Click += new System.EventHandler(this.RemoveProjectMenuItem_Click);
+			this.recentFilesContextMenu.Opening += new System.ComponentModel.CancelEventHandler(this.RecentFilesContextMenu_Opening);
+			this.recentFilesListBox.MouseDown += new System.Windows.Forms.MouseEventHandler(this.RecentFilesListBox_MouseDown);
 			this.recentFilesListBox.ContextMenuStrip = this.recentFilesContextMenu;
 			// 
 			// clearRecentFilesButton
