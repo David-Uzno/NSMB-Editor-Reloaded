@@ -1028,6 +1028,10 @@ namespace NSMBe5 {
         {
             try
             {
+                // Ensure any previously opened ROM is closed and dependent windows are closed to release file handles
+                try { CloseROMDependentWindows(); } catch { }
+                try { ROM.close(); } catch { }
+
                 NitroROMFilesystem fs = new NitroROMFilesystem(path);
                 Properties.Settings.Default.ROMPath = path;
                 Properties.Settings.Default.Save();
@@ -1185,12 +1189,26 @@ namespace NSMBe5 {
 
         private void EnableROMDependentControls()
         {
+            // Re-enable the whole tab control and all tab pages when a ROM is loaded
             tabControl1.Enabled = true;
+            foreach (System.Windows.Forms.TabPage tp in tabControl1.TabPages)
+            {
+                tp.Enabled = true;
+            }
         }
 
         private void DisableROMDependentControls()
         {
-            tabControl1.Enabled = false;
+            // Keep tabControl enabled so Projects tab remains usable even without a ROM
+            tabControl1.Enabled = true;
+            // Disable only ROM-dependent tab pages. Projects (tabPage0) and About (tabPage4) stay enabled.
+            foreach (System.Windows.Forms.TabPage tp in tabControl1.TabPages)
+            {
+                if (tp == tabPage0 || tp == tabPage4)
+                    tp.Enabled = true;
+                else
+                    tp.Enabled = false;
+            }
         }
 
         private void UpdateMenuState()
@@ -1259,8 +1277,10 @@ namespace NSMBe5 {
             
             if (recentFiles.Count == 0)
             {
-                var emptyItem = new ToolStripMenuItem("(No recent files)");
-                emptyItem.Enabled = false;
+                var emptyItem = new ToolStripMenuItem("(No recent files)")
+                {
+                    Enabled = false
+                };
                 recentFilesToolStripMenuItem.DropDownItems.Add(emptyItem);
             }
             else
@@ -1269,8 +1289,10 @@ namespace NSMBe5 {
                 {
                     var fileName = System.IO.Path.GetFileName(recentFiles[i]);
                     var menuText = $"&{i + 1} {fileName}";
-                    var menuItem = new ToolStripMenuItem(menuText);
-                    menuItem.Tag = recentFiles[i];
+                    var menuItem = new ToolStripMenuItem(menuText)
+                    {
+                        Tag = recentFiles[i]
+                    };
                     menuItem.Click += RecentFileMenuItem_Click;
                     recentFilesToolStripMenuItem.DropDownItems.Add(menuItem);
                 }
@@ -1281,6 +1303,8 @@ namespace NSMBe5 {
                 clearItem.Click += ClearRecentFiles_Click;
                 recentFilesToolStripMenuItem.DropDownItems.Add(clearItem);
             }
+
+            UpdateRecentFilesPanel();
         }
 
         private void RecentFileMenuItem_Click(object sender, EventArgs e)
@@ -1310,6 +1334,52 @@ namespace NSMBe5 {
             Properties.Settings.Default.RecentFiles = "";
             Properties.Settings.Default.Save();
             UpdateRecentFilesMenu();
+        }
+
+        private void UpdateRecentFilesPanel()
+        {
+            try
+            {
+                if (this.recentFilesListBox == null) return;
+
+                this.recentFilesListBox.Items.Clear();
+                var recentFiles = GetRecentFiles();
+                if (recentFiles.Count == 0)
+                {
+                    this.recentFilesListBox.Items.Add("(No recent files)");
+                    this.recentFilesListBox.Enabled = false;
+                }
+                else
+                {
+                    this.recentFilesListBox.Enabled = true;
+                    foreach (var f in recentFiles)
+                    {
+                        this.recentFilesListBox.Items.Add(f);
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void recentFilesListBox_DoubleClick(object sender, EventArgs e)
+        {
+            if (recentFilesListBox == null) return;
+            if (recentFilesListBox.SelectedItem is string filePath)
+            {
+                if (System.IO.File.Exists(filePath))
+                {
+                    LoadROMFromPath(filePath);
+                }
+                else
+                {
+                    MessageBox.Show($"File not found: {filePath}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var recentFiles = GetRecentFiles();
+                    recentFiles.Remove(filePath);
+                    Properties.Settings.Default.RecentFiles = string.Join(";", recentFiles.ToArray());
+                    Properties.Settings.Default.Save();
+                    UpdateRecentFilesMenu();
+                }
+            }
         }
 
         #endregion

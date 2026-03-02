@@ -41,6 +41,9 @@ namespace NSMBe5 {
 			this.hostTextBox = new System.Windows.Forms.ToolStripTextBox();
 			this.portTextBox = new System.Windows.Forms.ToolStripTextBox();
 			this.tabControl1 = new System.Windows.Forms.TabControl();
+			this.tabPage0 = new System.Windows.Forms.TabPage();
+			this.recentFilesListBox = new System.Windows.Forms.ListBox();
+			this.clearRecentFilesButton = new System.Windows.Forms.Button();
 			this.tabPage2 = new System.Windows.Forms.TabPage();
 			this.openClipboard = new System.Windows.Forms.Button();
 			this.exportClipboard = new System.Windows.Forms.Button();
@@ -110,6 +113,7 @@ namespace NSMBe5 {
 			this.openROMDialog = new System.Windows.Forms.OpenFileDialog();
 			this.menuStrip1.SuspendLayout();
 			this.tabControl1.SuspendLayout();
+			this.tabPage0.SuspendLayout();
 			this.tabPage2.SuspendLayout();
 			this.tabPage5.SuspendLayout();
 			this.tabPage6.SuspendLayout();
@@ -229,6 +233,7 @@ namespace NSMBe5 {
 			this.tabControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+			this.tabControl1.Controls.Add(this.tabPage0);
 			this.tabControl1.Controls.Add(this.tabPage2);
 			this.tabControl1.Controls.Add(this.tabPage5);
 			this.tabControl1.Controls.Add(this.tabPage6);
@@ -241,6 +246,46 @@ namespace NSMBe5 {
 			this.tabControl1.SelectedIndex = 0;
 			this.tabControl1.Size = new System.Drawing.Size(733, 570);
 			this.tabControl1.TabIndex = 0;
+			// 
+			// tabPageProjects
+			// 
+			this.tabPage0.Controls.Add(this.recentFilesListBox);
+			this.tabPage0.Controls.Add(this.clearRecentFilesButton);
+			this.tabPage0.Location = new System.Drawing.Point(4, 25);
+			this.tabPage0.Margin = new System.Windows.Forms.Padding(4);
+			this.tabPage0.Name = "tabPage0";
+			this.tabPage0.Padding = new System.Windows.Forms.Padding(4);
+			this.tabPage0.Size = new System.Drawing.Size(725, 565);
+			this.tabPage0.TabIndex = 0;
+			this.tabPage0.Text = "<Projects>";
+			this.tabPage0.UseVisualStyleBackColor = true;
+			// 
+			// recentFilesListBox
+			// 
+			this.recentFilesListBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+				| System.Windows.Forms.AnchorStyles.Left)
+				| System.Windows.Forms.AnchorStyles.Right)));
+			this.recentFilesListBox.FormattingEnabled = true;
+			this.recentFilesListBox.IntegralHeight = false;
+			this.recentFilesListBox.Location = new System.Drawing.Point(8, 8);
+			this.recentFilesListBox.Margin = new System.Windows.Forms.Padding(4);
+			this.recentFilesListBox.Name = "recentFilesListBox";
+			this.recentFilesListBox.Size = new System.Drawing.Size(709, 501);
+			this.recentFilesListBox.TabIndex = 0;
+			this.recentFilesListBox.DoubleClick += new System.EventHandler(this.recentFilesListBox_DoubleClick);
+			// 
+			// clearRecentFilesButton
+			// 
+			this.clearRecentFilesButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+			this.clearRecentFilesButton.Location = new System.Drawing.Point(572, 516);
+			this.clearRecentFilesButton.Margin = new System.Windows.Forms.Padding(4);
+			this.clearRecentFilesButton.Name = "clearRecentFilesButton";
+			this.clearRecentFilesButton.Padding = new System.Windows.Forms.Padding(4);
+			this.clearRecentFilesButton.Size = new System.Drawing.Size(145, 36);
+			this.clearRecentFilesButton.TabIndex = 1;
+			this.clearRecentFilesButton.Text = "Clear Recent Files";
+			this.clearRecentFilesButton.UseVisualStyleBackColor = true;
+			this.clearRecentFilesButton.Click += new System.EventHandler(this.ClearRecentFiles_Click);
 			// 
 			// tabPage2
 			// 
@@ -1035,6 +1080,7 @@ namespace NSMBe5 {
 			this.groupBox1.PerformLayout();
 			((System.ComponentModel.ISupportInitialize)(this.autoBackupTime)).EndInit();
 			this.tabPage4.ResumeLayout(false);
+			this.tabPage0.ResumeLayout(false);
 			this.ResumeLayout(false);
 
         }
@@ -1042,8 +1088,11 @@ namespace NSMBe5 {
         #endregion
 
         private System.Windows.Forms.TabControl tabControl1;
-        private System.Windows.Forms.TabPage tabPage1;
-        private System.Windows.Forms.TabPage tabPage2;
+		private System.Windows.Forms.TabPage tabPage1;
+		private System.Windows.Forms.TabPage tabPage0;
+		private System.Windows.Forms.ListBox recentFilesListBox;
+		private System.Windows.Forms.Button clearRecentFilesButton;
+		private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.Button exportLevelButton;
         private System.Windows.Forms.Button importLevelButton;
         private System.Windows.Forms.Button editLevelButton;
