@@ -43,7 +43,6 @@ namespace NSMBe5 {
 			this.tabControl1 = new System.Windows.Forms.TabControl();
 			this.tabPage0 = new System.Windows.Forms.TabPage();
 			this.recentFilesListBox = new System.Windows.Forms.ListBox();
-			this.clearRecentFilesButton = new System.Windows.Forms.Button();
 			this.tabPage2 = new System.Windows.Forms.TabPage();
 			this.openClipboard = new System.Windows.Forms.Button();
 			this.exportClipboard = new System.Windows.Forms.Button();
@@ -250,7 +249,6 @@ namespace NSMBe5 {
 			// tabPageProjects
 			// 
 			this.tabPage0.Controls.Add(this.recentFilesListBox);
-			this.tabPage0.Controls.Add(this.clearRecentFilesButton);
 			this.tabPage0.Location = new System.Drawing.Point(4, 25);
 			this.tabPage0.Margin = new System.Windows.Forms.Padding(4);
 			this.tabPage0.Name = "tabPage0";
@@ -273,6 +271,62 @@ namespace NSMBe5 {
 			this.recentFilesListBox.Size = new System.Drawing.Size(709, 501);
 			this.recentFilesListBox.TabIndex = 0;
 			this.recentFilesListBox.DoubleClick += new System.EventHandler(this.RecentFilesListBox_DoubleClick);
+			this.recentFilesListBox.Visible = false;
+			this.projectsHeader = new System.Windows.Forms.Label();
+			this.searchBox = new System.Windows.Forms.TextBox();
+			this.addProjectButton = new System.Windows.Forms.Button();
+			this.projectsPanel = new System.Windows.Forms.FlowLayoutPanel();
+			// 
+			// projectsHeader
+			// 
+			this.projectsHeader.Location = new System.Drawing.Point(8, 8);
+			this.projectsHeader.Name = "projectsHeader";
+			this.projectsHeader.Size = new System.Drawing.Size(300, 24);
+			this.projectsHeader.TabIndex = 2;
+			this.projectsHeader.Text = "Projects";
+			this.projectsHeader.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			// 
+			// searchBox
+			// 
+			this.searchBox.Location = new System.Drawing.Point(12, 36);
+			this.searchBox.Name = "searchBox";
+			this.searchBox.Size = new System.Drawing.Size(560, 22);
+			this.searchBox.TabIndex = 3;
+			this.searchBox.ForeColor = System.Drawing.SystemColors.GrayText;
+			this.searchBox.Text = "Search";
+			this.searchBox.Enter += new System.EventHandler(this.SearchBox_Enter);
+			this.searchBox.Leave += new System.EventHandler(this.SearchBox_Leave);
+			this.searchBox.TextChanged += new System.EventHandler(this.SearchBox_TextChanged);
+			// 
+			// addProjectButton
+			// 
+			this.addProjectButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+			this.addProjectButton.Location = new System.Drawing.Point(580, 34);
+			this.addProjectButton.Name = "addProjectButton";
+			this.addProjectButton.Size = new System.Drawing.Size(137, 26);
+			this.addProjectButton.TabIndex = 4;
+			this.addProjectButton.Text = "Add";
+			this.addProjectButton.UseVisualStyleBackColor = true;
+			this.addProjectButton.Click += new System.EventHandler(this.AddProjectButton_Click);
+			// 
+			// projectsPanel
+			// 
+			this.projectsPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.projectsPanel.AutoScroll = true;
+			this.projectsPanel.FlowDirection = System.Windows.Forms.FlowDirection.LeftToRight;
+			this.projectsPanel.Location = new System.Drawing.Point(12, 66);
+			this.projectsPanel.Name = "projectsPanel";
+			this.projectsPanel.Size = new System.Drawing.Size(705, 430);
+			this.projectsPanel.SizeChanged += new System.EventHandler(this.ProjectsPanel_SizeChanged);
+			this.projectsPanel.TabIndex = 5;
+			this.projectsPanel.WrapContents = true;
+			this.tabPage0.Controls.Add(this.projectsHeader);
+			this.tabPage0.Controls.Add(this.searchBox);
+			this.tabPage0.Controls.Add(this.addProjectButton);
+			this.tabPage0.Controls.Add(this.projectsPanel);
+            
 			// Context menu for recent files
 			this.recentFilesContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
 			this.showInExplorerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -291,19 +345,6 @@ namespace NSMBe5 {
 			this.recentFilesContextMenu.Opening += new System.ComponentModel.CancelEventHandler(this.RecentFilesContextMenu_Opening);
 			this.recentFilesListBox.MouseDown += new System.Windows.Forms.MouseEventHandler(this.RecentFilesListBox_MouseDown);
 			this.recentFilesListBox.ContextMenuStrip = this.recentFilesContextMenu;
-			// 
-			// clearRecentFilesButton
-			// 
-			this.clearRecentFilesButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.clearRecentFilesButton.Location = new System.Drawing.Point(572, 516);
-			this.clearRecentFilesButton.Margin = new System.Windows.Forms.Padding(4);
-			this.clearRecentFilesButton.Name = "clearRecentFilesButton";
-			this.clearRecentFilesButton.Padding = new System.Windows.Forms.Padding(4);
-			this.clearRecentFilesButton.Size = new System.Drawing.Size(145, 36);
-			this.clearRecentFilesButton.TabIndex = 1;
-			this.clearRecentFilesButton.Text = "Clear Recent Files";
-			this.clearRecentFilesButton.UseVisualStyleBackColor = true;
-			this.clearRecentFilesButton.Click += new System.EventHandler(this.ClearRecentFiles_Click);
 			// 
 			// tabPage2
 			// 
@@ -1109,7 +1150,11 @@ namespace NSMBe5 {
 		private System.Windows.Forms.TabPage tabPage1;
 		private System.Windows.Forms.TabPage tabPage0;
 		private System.Windows.Forms.ListBox recentFilesListBox;
-		private System.Windows.Forms.Button clearRecentFilesButton;
+		private System.Windows.Forms.Label projectsHeader;
+		private System.Windows.Forms.TextBox searchBox;
+		private System.Windows.Forms.Button addProjectButton;
+		private System.Windows.Forms.FlowLayoutPanel projectsPanel;
+
 		private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.Button exportLevelButton;
         private System.Windows.Forms.Button importLevelButton;

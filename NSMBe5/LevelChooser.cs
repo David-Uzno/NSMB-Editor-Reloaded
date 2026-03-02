@@ -19,6 +19,7 @@ using System;
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
 using System.Windows.Forms;
 using System.IO;
 using NSMBe5.DSFileSystem;
@@ -38,6 +39,58 @@ namespace NSMBe5 {
         //   This causes it to be saved in the settings before the settings value is loaded.
         public bool init = false;
         private bool romLoaded = false;
+            // Currently loaded recent file path — only this card's title is bold
+            private string currentLoadedRecentFile = null;
+            private static string GetRelativeTimeString(DateTime dt)
+            {
+                var span = DateTime.Now - dt;
+                if (span.TotalSeconds < 60)
+                    return "A few seconds ago";
+                if (span.TotalMinutes < 60)
+                {
+                    int m = Math.Max(1, (int)span.TotalMinutes);
+                    return $"{m} minute{(m == 1 ? "" : "s")} ago";
+                }
+                if (span.TotalHours < 24)
+                {
+                    int h = Math.Max(1, (int)span.TotalHours);
+                    return $"{h} hour{(h == 1 ? "" : "s")} ago";
+                }
+                if (span.TotalDays < 30)
+                {
+                    int d = Math.Max(1, (int)span.TotalDays);
+                    return $"{d} day{(d == 1 ? "" : "s")} ago";
+                }
+                if (span.TotalDays < 365)
+                {
+                    int mo = Math.Max(1, (int)(span.TotalDays / 30));
+                    return $"{mo} month{(mo == 1 ? "" : "s")} ago";
+                }
+                int y = Math.Max(1, (int)(span.TotalDays / 365));
+                return $"{y} year{(y == 1 ? "" : "s")} ago";
+            }
+            private void UpdateCardModifiedLabel(string filePath)
+            {
+                if (this.projectsPanel == null) return;
+                foreach (Control c in this.projectsPanel.Controls)
+                {
+                    if (c is Panel panel && panel.Tag is string fp && fp == filePath)
+                    {
+                        foreach (Control child in panel.Controls)
+                        {
+                            if (child is Label lbl && lbl.Tag is string t && t == "modifiedLbl")
+                            {
+                                try
+                                {
+                                    lbl.Text = GetRelativeTimeString(System.IO.File.GetLastWriteTime(filePath));
+                                }
+                                catch { }
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
 
         public static void ShowImgMgr()
         {
@@ -157,6 +210,38 @@ namespace NSMBe5 {
                     }
                 }
             }
+        }
+
+        private void UpdateCardOpenedState()
+        {
+            if (this.projectsPanel == null) return;
+            foreach (Control c in this.projectsPanel.Controls)
+            {
+                if (c is Panel panel && panel.Tag is string fp)
+                {
+                    foreach (Control child in panel.Controls)
+                    {
+                        if (child is Label lbl && lbl.Tag is string t && t == "nameLbl")
+                        {
+                            try
+                            {
+                                if (!string.IsNullOrEmpty(currentLoadedRecentFile) && string.Equals(fp, currentLoadedRecentFile, StringComparison.OrdinalIgnoreCase))
+                                    lbl.Font = new Font(lbl.Font, FontStyle.Bold);
+                                else
+                                    lbl.Font = new Font(lbl.Font, FontStyle.Regular);
+                            }
+                            catch { }
+                        }
+                    }
+                }
+            }
+        }
+
+        private void MarkRecentOpened(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath)) return;
+            currentLoadedRecentFile = filePath;
+            UpdateCardOpenedState();
         }
 
         private void LevelTreeView_AfterSelect(object sender, TreeViewEventArgs e) {
@@ -1060,6 +1145,8 @@ namespace NSMBe5 {
                 
                 // Add to recent files
                 AddToRecentFiles(path);
+                // Mark the recently loaded ROM so its project card title becomes bold
+                MarkRecentOpened(path);
             }
             catch (Exception ex)
             {
@@ -1328,6 +1415,8 @@ namespace NSMBe5 {
                 if (System.IO.File.Exists(filePath))
                 {
                     LoadROMFromPath(filePath);
+                    MarkRecentOpened(filePath);
+                    UpdateCardModifiedLabel(filePath);
                 }
                 else
                 {
@@ -1353,25 +1442,187 @@ namespace NSMBe5 {
         {
             try
             {
-                if (this.recentFilesListBox == null) return;
+                if (this.projectsPanel == null) return;
 
-                this.recentFilesListBox.Items.Clear();
+                this.projectsPanel.Controls.Clear();
                 var recentFiles = GetRecentFiles();
+
                 if (recentFiles.Count == 0)
                 {
-                    this.recentFilesListBox.Items.Add("(No recent files)");
-                    this.recentFilesListBox.Enabled = false;
+                    var lbl = new Label() { Text = "(No recent projects)", AutoSize = true, ForeColor = SystemColors.GrayText };
+                    this.projectsPanel.Controls.Add(lbl);
                 }
                 else
                 {
-                    this.recentFilesListBox.Enabled = true;
+                    string filter = "";
+                    if (this.searchBox != null)
+                    {
+                        // If placeholder is showing (gray text), treat as empty filter to display all recent files
+                        if (this.searchBox.ForeColor == SystemColors.GrayText)
+                            filter = "";
+                        else
+                            filter = this.searchBox.Text?.ToLowerInvariant() ?? "";
+                    }
                     foreach (var f in recentFiles)
                     {
-                        this.recentFilesListBox.Items.Add(f);
+                        if (!string.IsNullOrEmpty(filter))
+                        {
+                            var name = Path.GetFileNameWithoutExtension(f).ToLowerInvariant();
+                            if (!f.ToLowerInvariant().Contains(filter) && !name.Contains(filter))
+                                continue;
+                        }
+                        var card = CreateProjectCard(f);
+                        this.projectsPanel.Controls.Add(card);
                     }
                 }
             }
             catch { }
+        }
+
+        private Panel CreateProjectCard(string filePath)
+        {
+            int cardWidth = (this.projectsPanel != null) ? Math.Max(280, this.projectsPanel.ClientSize.Width - 24) : 440;
+            var panel = new Panel
+            {
+                Width = cardWidth,
+                Height = 36,
+                Margin = new Padding(8),
+                BorderStyle = BorderStyle.FixedSingle,
+                Anchor = AnchorStyles.Left | AnchorStyles.Right,
+                MinimumSize = new Size(240, 36)
+            };
+
+            var nameLbl = new Label
+            {
+                AutoSize = false,
+                Location = new Point(8, 4),
+                Size = new Size(panel.Width - 180, 16),
+                AutoEllipsis = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                Text = Path.GetFileNameWithoutExtension(filePath)
+            };
+            nameLbl.Tag = "nameLbl";
+            // If this project is the currently loaded recent file, show title bold
+            if (!string.IsNullOrEmpty(currentLoadedRecentFile) && string.Equals(currentLoadedRecentFile, filePath, StringComparison.OrdinalIgnoreCase))
+            {
+                try { nameLbl.Font = new Font(nameLbl.Font, FontStyle.Bold); } catch { }
+            }
+            panel.Controls.Add(nameLbl);
+
+            var pathLbl = new Label
+            {
+                AutoSize = false,
+                Location = new Point(8, 20),
+                Size = new Size(panel.Width - 180, 12),
+                AutoEllipsis = true,
+                Font = new Font("Segoe UI", 8F),
+                ForeColor = SystemColors.GrayText,
+                Text = filePath
+            };
+            panel.Controls.Add(pathLbl);
+
+            var modifiedLbl = new Label
+            {
+                AutoSize = false,
+                Location = new Point(panel.Width - 120, 6),
+                Size = new Size(110, 24),
+                Font = new Font("Segoe UI", 8F),
+                ForeColor = SystemColors.GrayText,
+                TextAlign = ContentAlignment.MiddleRight,
+                Text = GetRelativeTimeString(System.IO.File.GetLastWriteTime(filePath)),
+                Tag = "modifiedLbl"
+            };
+            panel.Controls.Add(modifiedLbl);
+
+            // Tooltips for truncated text
+            try
+            {
+                if (this.toolTip1 != null)
+                {
+                    this.toolTip1.SetToolTip(nameLbl, Path.GetFileName(filePath));
+                    this.toolTip1.SetToolTip(pathLbl, filePath);
+                    this.toolTip1.SetToolTip(modifiedLbl, System.IO.File.GetLastWriteTime(filePath).ToString());
+                }
+            }
+            catch { }
+
+            panel.Tag = filePath;
+            panel.Click += (s, e) => { /* select on click if needed */ };
+            nameLbl.Click += (s, e) => { /* select on click if needed */ };
+            pathLbl.Click += (s, e) => { /* select on click if needed */ };
+            panel.DoubleClick += (s, e) => {
+                if (System.IO.File.Exists(filePath)) {
+                    LoadROMFromPath(filePath);
+                    MarkRecentOpened(filePath);
+                    UpdateCardModifiedLabel(filePath);
+                }
+            };
+            // Ensure double-click on child labels also opens the project
+            nameLbl.DoubleClick += (s, e) => {
+                if (System.IO.File.Exists(filePath)) {
+                    LoadROMFromPath(filePath);
+                    MarkRecentOpened(filePath);
+                    UpdateCardModifiedLabel(filePath);
+                }
+            };
+            pathLbl.DoubleClick += (s, e) => {
+                if (System.IO.File.Exists(filePath)) {
+                    LoadROMFromPath(filePath);
+                    MarkRecentOpened(filePath);
+                    UpdateCardModifiedLabel(filePath);
+                }
+            };
+
+            // context menu for this card
+            var ctx = new ContextMenuStrip();
+            var showItem = new ToolStripMenuItem("Show in Explorer") { Tag = filePath };
+            showItem.Click += (s, e) => { ShowInExplorerFor(filePath); };
+            var removeItem = new ToolStripMenuItem("Remove project from list") { Tag = filePath };
+            removeItem.Click += (s, e) => { RemoveProjectFor(filePath); };
+            ctx.Items.Add(showItem);
+            ctx.Items.Add(removeItem);
+            panel.ContextMenuStrip = ctx;
+
+            return panel;
+        }
+
+        private void SearchBox_TextChanged(object sender, EventArgs e)
+        {
+            // If the placeholder is showing, don't trigger search.
+            if (this.searchBox.ForeColor == SystemColors.GrayText)
+                return;
+
+            // Only start filtering once the user has entered text (first character).
+            UpdateRecentFilesPanel();
+        }
+
+        
+
+        private void SearchBox_Enter(object sender, EventArgs e)
+        {
+            if (this.searchBox.ForeColor == SystemColors.GrayText)
+            {
+                this.searchBox.Text = string.Empty;
+                this.searchBox.ForeColor = SystemColors.WindowText;
+            }
+        }
+
+        private void SearchBox_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(this.searchBox.Text))
+            {
+                this.searchBox.ForeColor = SystemColors.GrayText;
+                this.searchBox.Text = "Search";
+            }
+        }
+
+        private void AddProjectButton_Click(object sender, EventArgs e)
+        {
+            if (openROMDialog.ShowDialog() == DialogResult.OK)
+            {
+                var path = openROMDialog.FileName;
+                AddToRecentFiles(path);
+            }
         }
 
         private void RecentFilesListBox_DoubleClick(object sender, EventArgs e)
@@ -1382,6 +1633,8 @@ namespace NSMBe5 {
                 if (System.IO.File.Exists(filePath))
                 {
                     LoadROMFromPath(filePath);
+                    MarkRecentOpened(filePath);
+                    UpdateCardModifiedLabel(filePath);
                 }
                 else
                 {
@@ -1406,6 +1659,46 @@ namespace NSMBe5 {
                 else
                     recentFilesListBox.ClearSelected();
             }
+        }
+
+        private void ProjectsPanel_SizeChanged(object sender, EventArgs e)
+        {
+            if (this.projectsPanel == null) return;
+            try
+            {
+                foreach (Control c in this.projectsPanel.Controls)
+                {
+                    if (c is Panel panel)
+                    {
+                        int newWidth = Math.Max(240, this.projectsPanel.ClientSize.Width - 24);
+                        panel.Width = newWidth;
+                        // adjust child controls positions/sizes
+                        foreach (Control child in panel.Controls)
+                        {
+                            if (child is Label lbl)
+                            {
+                                if (lbl.Tag is string t && t == "modifiedLbl")
+                                {
+                                    lbl.Location = new Point(panel.Width - 120, lbl.Location.Y);
+                                    lbl.Width = 110;
+                                }
+                                else
+                                {
+                                    lbl.Width = panel.Width - 180;
+                                }
+                            }
+                            else if (child is Button btn)
+                            {
+                                if (btn.Text == "Open")
+                                    btn.Location = new Point(panel.Width - 140, btn.Location.Y);
+                                else if (btn.Text == "Remove")
+                                    btn.Location = new Point(panel.Width - 80, btn.Location.Y);
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
         }
 
         private void RecentFilesContextMenu_Opening(object sender, CancelEventArgs e)
@@ -1453,6 +1746,47 @@ namespace NSMBe5 {
             }
         }
 
+        private void ShowInExplorerFor(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath)) return;
+            if (System.IO.File.Exists(filePath))
+            {
+                try
+                {
+                    Process.Start("explorer.exe", "/select,\"" + filePath + "\"");
+                }
+                catch
+                {
+                    try { Process.Start("explorer.exe", Path.GetDirectoryName(filePath)); } catch { }
+                }
+            }
+            else
+            {
+                MessageBox.Show($"File not found: {filePath}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var recentFiles = GetRecentFiles();
+                recentFiles.Remove(filePath);
+                Properties.Settings.Default.RecentFiles = string.Join(";", recentFiles.ToArray());
+                Properties.Settings.Default.Save();
+                UpdateRecentFilesMenu();
+            }
+        }
+
+        private void RemoveProjectFor(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath)) return;
+            var recentFiles = GetRecentFiles();
+            recentFiles.Remove(filePath);
+            Properties.Settings.Default.RecentFiles = string.Join(";", recentFiles.ToArray());
+            Properties.Settings.Default.Save();
+            // If the removed project was the currently loaded one, clear bold state
+            if (!string.IsNullOrEmpty(currentLoadedRecentFile) && string.Equals(currentLoadedRecentFile, filePath, StringComparison.OrdinalIgnoreCase))
+            {
+                currentLoadedRecentFile = null;
+            }
+            UpdateRecentFilesMenu();
+            UpdateRecentFilesPanel();
+        }
+
         private void RemoveProjectMenuItem_Click(object sender, EventArgs e)
         {
             if (recentFilesListBox == null) return;
@@ -1463,6 +1797,11 @@ namespace NSMBe5 {
                 Properties.Settings.Default.RecentFiles = string.Join(";", recentFiles.ToArray());
                 Properties.Settings.Default.Save();
                 UpdateRecentFilesMenu();
+                if (!string.IsNullOrEmpty(currentLoadedRecentFile) && string.Equals(currentLoadedRecentFile, filePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    currentLoadedRecentFile = null;
+                    UpdateCardOpenedState();
+                }
             }
         }
 
