@@ -114,6 +114,10 @@ namespace NSMBe5 {
                             {
                                 try
                                 {
+                                    lbl.AutoSize = false;
+                                    lbl.AutoEllipsis = true;
+                                    lbl.TextAlign = ContentAlignment.MiddleRight;
+                                    lbl.Anchor = AnchorStyles.Top | AnchorStyles.Right;
                                     lbl.Text = GetRelativeTimeString(System.IO.File.GetLastWriteTime(filePath));
                                 }
                                 catch { }
@@ -1657,16 +1661,20 @@ namespace NSMBe5 {
             };
             panel.Controls.Add(pathLbl);
 
+            // Compute a sensible width for the modified label so it can show more text before ellipsizing
+            int modWidth = Math.Max(80, Math.Min(300, panel.Width - 160));
             var modifiedLbl = new Label
             {
                 AutoSize = false,
-                Location = new Point(panel.Width - 120, 6),
-                Size = new Size(110, 24),
+                AutoEllipsis = true,
+                Location = new Point(panel.Width - modWidth - 8, 6),
+                Size = new Size(modWidth, 24),
                 Font = new Font("Segoe UI", 8F),
                 ForeColor = SystemColors.GrayText,
                 TextAlign = ContentAlignment.MiddleRight,
                 Text = GetRelativeTimeString(System.IO.File.GetLastWriteTime(filePath)),
-                Tag = "modifiedLbl"
+                Tag = "modifiedLbl",
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
             panel.Controls.Add(modifiedLbl);
 
@@ -1877,8 +1885,10 @@ namespace NSMBe5 {
                             {
                                 if (lbl.Tag is string t && t == "modifiedLbl")
                                 {
-                                    lbl.Location = new Point(panel.Width - 120, lbl.Location.Y);
-                                    lbl.Width = 110;
+                                    int avail = Math.Max(80, panel.Width - 160);
+                                    int modLblWidth = Math.Min(300, avail);
+                                    lbl.Location = new Point(panel.Width - modLblWidth - 8, lbl.Location.Y);
+                                    lbl.Width = modLblWidth;
                                 }
                                 else
                                 {
