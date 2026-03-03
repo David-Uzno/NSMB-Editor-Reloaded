@@ -1243,6 +1243,14 @@ namespace NSMBe5 {
             }
 
             EnableROMDependentControls();
+
+            // When loading a ROM, automatically go to the NSMB tools tab (tabPage2) if it exists
+            try
+            {
+                if (this.tabControl1 != null && this.tabControl1.TabPages.Contains(this.tabPage2))
+                    this.tabControl1.SelectedTab = this.tabPage2;
+            }
+            catch { }
         }
 
         private void CloseROM()
