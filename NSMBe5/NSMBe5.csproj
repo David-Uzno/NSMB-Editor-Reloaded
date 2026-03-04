@@ -237,6 +237,40 @@
     <Compile Include="LevelChooser.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="LevelChooser.LevelListing.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LevelChooser.PreviewRenderer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LevelChooser.FilesystemService.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LevelChooser.ROMManager.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LevelChooser.PatchManager.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LevelChooser.XdeltaService.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LevelChooser.CodePatcher.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LevelChooser.PluginManager.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LevelChooser.UIEventRouter.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LevelChooser.ProjectStores.cs" />
+    <Compile Include="LevelChooser.RecentProjects.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LevelChooser.Theming.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="LevelChooser.Designer.cs">
       <DependentUpon>LevelChooser.cs</DependentUpon>
     </Compile>
