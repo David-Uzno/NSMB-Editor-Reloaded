@@ -1,5 +1,5 @@
 # NSMB Editor Reloaded
-For English, see [README.en.md](README.en.md).
+[English Version](README.en.md).
 
 ¡Bienvenido a la nueva versión de NSMBe, el editor de niveles por excelencia para New Super Mario Bros. de Nintendo DS!
 
@@ -26,9 +26,9 @@ Para versiones antiguas, podés consultar la [página de Releases en GitHub](htt
 - Linux, MacOSX y otros: [Mono](https://www.mono-project.com/download/stable/)
 
 ## Comunidad
-¡Unite al [Discord de NSMB Central](https://discord.gg/x7gr3M9)!
+[¡Discord de Uzno Labs!](https://discord.gg/VW79XukCbj) - Servidor oficial, mantente al día con este u otros de mis proyectos.
 
-También podés sumarte al foro: [NSMBHD](http://nsmbhd.net/)
+[Foro de NSMBHD](http://nsmbhd.net/) - Página dedica al ROM Hacking de NSMB.
 
 ## Créditos
 - Treeki - Desarrollador original
