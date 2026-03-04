@@ -103,6 +103,12 @@ namespace NSMBe5.Properties
             set => ConfigurationManager.Settings.RecentFiles = value;
         }
 
+        public int LevelListingPreviewMode
+        {
+            get => ConfigurationManager.Settings.LevelListingPreviewMode;
+            set => ConfigurationManager.Settings.LevelListingPreviewMode = value;
+        }
+
         /// <summary>
         /// Saves the current settings
         /// </summary>

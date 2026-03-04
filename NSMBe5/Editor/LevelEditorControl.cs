@@ -158,6 +158,7 @@ namespace NSMBe5
 
 
 		public EditionMode mode = null;
+		private bool previewCaptureMode = false;
 
 		private int DragStartX;
 		private int DragStartY;
@@ -173,8 +174,10 @@ namespace NSMBe5
 		private void DrawingArea_Paint(object sender, PaintEventArgs e) 
 		{
 			if (!Ready) return;
-			minimap.Invalidate(true);
-			minimapctrl.Invalidate(true);
+			if (minimap != null)
+				minimap.Invalidate(true);
+			if (minimapctrl != null)
+				minimapctrl.Invalidate(true);
 
 			e.Graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
 			e.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
@@ -189,18 +192,27 @@ namespace NSMBe5
 			updateTileCache();
 
 			// RENDER PANNING BLOCKS GRID
-			for (int x = ViewableBlocks.X / 16; x <= (ViewableBlocks.Width + ViewableBlocks.X) / 16; x++)
-				for (int y = ViewableBlocks.Y / 16; y <= (ViewableBlocks.Height + ViewableBlocks.Y) / 16; y++)
-				{
-					bool has = false;
-					for (int xx = 0; xx < 16 && !has; xx++)
-						for (int yy = 0; yy < 16 && !has; yy++)
-							if (Level.levelTilemap[x * 16 + xx, y * 16 + yy] != 0)
-								has = true;
-					if (!has)
-						e.Graphics.FillRectangle(Brushes.DarkSlateGray, x * 256, y * 256, 256, 256);
-					e.Graphics.DrawRectangle(Pens.LightGray, x * 256, y * 256, 256, 256);
-				}
+			if (!previewCaptureMode)
+			{
+				for (int x = ViewableBlocks.X / 16; x <= (ViewableBlocks.Width + ViewableBlocks.X) / 16; x++)
+					for (int y = ViewableBlocks.Y / 16; y <= (ViewableBlocks.Height + ViewableBlocks.Y) / 16; y++)
+					{
+						bool has = false;
+						for (int xx = 0; xx < 16 && !has; xx++)
+							for (int yy = 0; yy < 16 && !has; yy++)
+							{
+								int tx = x * 16 + xx;
+								int ty = y * 16 + yy;
+								if (tx < 0 || tx >= 512 || ty < 0 || ty >= 256)
+									continue;
+								if (Level.levelTilemap[tx, ty] != 0)
+									has = true;
+							}
+						if (!has)
+							e.Graphics.FillRectangle(Brushes.DarkSlateGray, x * 256, y * 256, 256, 256);
+						e.Graphics.DrawRectangle(Pens.LightGray, x * 256, y * 256, 256, 256);
+					}
+			}
 
 			if (bgImage != null)
 				e.Graphics.DrawImage(bgImage, bgX, bgY);
@@ -214,9 +226,12 @@ namespace NSMBe5
 			}
 
 			// RENDER PANNING BLOCKS GRID
-			for (int x = ViewableBlocks.X / 16; x <= (ViewableBlocks.Width + ViewableBlocks.X) / 16; x++)
-				for (int y = ViewableBlocks.Y / 16; y <= (ViewableBlocks.Height + ViewableBlocks.Y) / 16; y++)
-					e.Graphics.DrawRectangle(Pens.LightGray, x * 256, y * 256, 256, 256);
+			if (!previewCaptureMode)
+			{
+				for (int x = ViewableBlocks.X / 16; x <= (ViewableBlocks.Width + ViewableBlocks.X) / 16; x++)
+					for (int y = ViewableBlocks.Y / 16; y <= (ViewableBlocks.Height + ViewableBlocks.Y) / 16; y++)
+						e.Graphics.DrawRectangle(Pens.LightGray, x * 256, y * 256, 256, 256);
+			}
 
 			{
 				int x = ViewableBlocks.X;
@@ -234,23 +249,66 @@ namespace NSMBe5
 			}
 
 			// And other stuff.
-			foreach (NSMBStageObj s in Level.Sprites)
-				if(s.AlwaysDraw() || ViewablePixels.IntersectsWith(s.GetRenderBounds()))
-					s.Render(e.Graphics, this);
+			if (!previewCaptureMode)
+			{
+				foreach (NSMBStageObj s in Level.Sprites)
+					if (s.AlwaysDraw() || ViewablePixels.IntersectsWith(s.GetRenderBounds()))
+						s.Render(e.Graphics, this);
 
-			foreach(NSMBEntrance n in Level.Entrances)
-				if(ViewablePixels.IntersectsWith(new Rectangle(n.x, n.y, n.width, n.height)))
-					n.Render(e.Graphics, this);
+				foreach (NSMBEntrance n in Level.Entrances)
+					if (ViewablePixels.IntersectsWith(new Rectangle(n.x, n.y, n.width, n.height)))
+						n.Render(e.Graphics, this);
 
-			foreach (NSMBView v in Level.Views)
-				v.Render(e.Graphics, this);
-			foreach (NSMBView v in Level.Zones)
-				v.Render(e.Graphics, this);
+				foreach (NSMBView v in Level.Views)
+					v.Render(e.Graphics, this);
+				foreach (NSMBView v in Level.Zones)
+					v.Render(e.Graphics, this);
 
-			foreach (NSMBPath p in Level.Paths)
-				p.render(e.Graphics, this, false);
-			foreach (NSMBPath p in Level.ProgressPaths)
-				p.render(e.Graphics, this, false);
+				foreach (NSMBPath p in Level.Paths)
+					p.render(e.Graphics, this, false);
+				foreach (NSMBPath p in Level.ProgressPaths)
+					p.render(e.Graphics, this, false);
+			}
+			else
+			{
+				foreach (NSMBStageObj s in Level.Sprites)
+				{
+					try
+					{
+						if (s.AlwaysDraw() || ViewablePixels.IntersectsWith(s.GetRenderBounds()))
+							s.Render(e.Graphics, this);
+					}
+					catch { }
+				}
+
+				foreach (NSMBEntrance n in Level.Entrances)
+				{
+					try
+					{
+						if (ViewablePixels.IntersectsWith(new Rectangle(n.x, n.y, n.width, n.height)))
+							n.Render(e.Graphics, this);
+					}
+					catch { }
+				}
+
+				foreach (NSMBView v in Level.Views)
+				{
+					try { v.Render(e.Graphics, this); } catch { }
+				}
+				foreach (NSMBView v in Level.Zones)
+				{
+					try { v.Render(e.Graphics, this); } catch { }
+				}
+
+				foreach (NSMBPath p in Level.Paths)
+				{
+					try { p.render(e.Graphics, this, false); } catch { }
+				}
+				foreach (NSMBPath p in Level.ProgressPaths)
+				{
+					try { p.render(e.Graphics, this, false); } catch { }
+				}
+			}
 
 			if (mode != null)
 				mode.RenderSelection(e.Graphics);
@@ -263,6 +321,312 @@ namespace NSMBe5
 			e.Graphics.TranslateTransform(hScrollBar.Value * 16, vScrollBar.Value * 16);
 		}
 		#endregion
+
+		public Bitmap CreateFullLevelPreview(int width, int height)
+		{
+			if (!Ready || GFX == null || Level == null || width <= 0 || height <= 0)
+				return null;
+
+			Bitmap bmp = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+			try
+			{
+				RectangleF bounds = GetRenderableBounds();
+				if (bounds.Width < 1f || bounds.Height < 1f)
+					bounds = new RectangleF(0f, 0f, 512f, 256f);
+
+				float pad = 4f;
+				float availW = Math.Max(1f, width - pad * 2f);
+				float availH = Math.Max(1f, height - pad * 2f);
+				float baseScaleX = availW / bounds.Width;
+				float baseScaleY = availH / bounds.Height;
+				float baseScale = Math.Max(0.01f, Math.Min(baseScaleX, baseScaleY));
+
+				int renderW = Math.Max(1, (int)Math.Round(bounds.Width * baseScale));
+				int renderH = Math.Max(1, (int)Math.Round(bounds.Height * baseScale));
+				int offsetX = (int)Math.Round(pad + (availW - renderW) / 2f);
+				int offsetY = (int)Math.Round(pad + (availH - renderH) / 2f);
+
+				float oldZoom = zoom;
+				bool oldShowGrid = showGrid;
+				bool oldShowDSScreen = showDSScreen;
+				bool oldIgnoreMouse = ignoreMouse;
+				Size oldDrawingSize = DrawingArea.Size;
+				int oldH = hScrollBar.Value;
+				int oldV = vScrollBar.Value;
+
+				try
+				{
+					showGrid = false;
+					showDSScreen = false;
+					ignoreMouse = true;
+					previewCaptureMode = true;
+
+					DrawingArea.Size = new Size(renderW, renderH);
+					zoom = Math.Max(0.01f, Math.Min((float)renderW / bounds.Width, (float)renderH / bounds.Height));
+					UpdateScrollbars();
+
+					int targetX = (int)Math.Round(bounds.Left * zoom);
+					int targetY = (int)Math.Round(bounds.Top * zoom);
+					ScrollEditorPixel(new Point(targetX, targetY));
+					UpdateScrollbars();
+
+					using (Graphics g = Graphics.FromImage(bmp))
+					{
+						g.Clear(Color.FromArgb(47, 79, 79));
+						g.SmoothingMode = SmoothingMode.None;
+						g.InterpolationMode = InterpolationMode.NearestNeighbor;
+						g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+						using (SolidBrush background = new SolidBrush(Color.FromArgb(60, 70, 70, 70)))
+							g.FillRectangle(background, offsetX, offsetY, renderW, renderH);
+
+						using (Pen framePen = new Pen(Color.FromArgb(120, 180, 180, 180), 1f))
+							g.DrawRectangle(framePen, offsetX, offsetY, renderW, renderH);
+
+						GraphicsState gs = g.Save();
+						g.TranslateTransform(offsetX, offsetY);
+						DrawingArea_Paint(DrawingArea, new PaintEventArgs(g, new Rectangle(0, 0, renderW, renderH)));
+						g.Restore(gs);
+					}
+				}
+				finally
+				{
+					previewCaptureMode = false;
+					DrawingArea.Size = oldDrawingSize;
+					zoom = oldZoom;
+					showGrid = oldShowGrid;
+					showDSScreen = oldShowDSScreen;
+					ignoreMouse = oldIgnoreMouse;
+					UpdateScrollbars();
+					ScrollEditorPixel(new Point(oldH, oldV));
+					UpdateScrollbars();
+				}
+			}
+			catch
+			{
+				try
+				{
+					using (Graphics g = Graphics.FromImage(bmp))
+					{
+						g.Clear(Color.FromArgb(47, 79, 79));
+					}
+				}
+				catch { }
+				return bmp;
+			}
+
+			return bmp;
+		}
+
+		public Bitmap CreateViewportPreview(int width, int height)
+		{
+			if (!Ready || GFX == null || Level == null || width <= 0 || height <= 0)
+				return null;
+
+			Bitmap bmp = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+			try
+			{
+				int renderW = Math.Max(1, DrawingArea.Width);
+				int renderH = Math.Max(1, DrawingArea.Height);
+
+				float pad = 4f;
+				float availW = Math.Max(1f, width - pad * 2f);
+				float availH = Math.Max(1f, height - pad * 2f);
+				float scale = Math.Max(0.01f, Math.Min(availW / renderW, availH / renderH));
+				int drawW = Math.Max(1, (int)Math.Round(renderW * scale));
+				int drawH = Math.Max(1, (int)Math.Round(renderH * scale));
+				int offsetX = (int)Math.Round(pad + (availW - drawW) / 2f);
+				int offsetY = (int)Math.Round(pad + (availH - drawH) / 2f);
+
+				float oldZoom = zoom;
+				bool oldShowGrid = showGrid;
+				bool oldShowDSScreen = showDSScreen;
+				bool oldIgnoreMouse = ignoreMouse;
+				Size oldDrawingSize = DrawingArea.Size;
+				int oldH = hScrollBar.Value;
+				int oldV = vScrollBar.Value;
+
+				try
+				{
+					showGrid = false;
+					showDSScreen = false;
+					ignoreMouse = true;
+					previewCaptureMode = true;
+
+					zoom = 1f;
+					UpdateScrollbars();
+					ScrollEditorPixel(new Point(0, 0));
+					UpdateScrollbars();
+
+					using (Bitmap viewport = new Bitmap(renderW, renderH, System.Drawing.Imaging.PixelFormat.Format32bppPArgb))
+					using (Graphics vg = Graphics.FromImage(viewport))
+					{
+						vg.Clear(Color.FromArgb(47, 79, 79));
+						vg.SmoothingMode = SmoothingMode.None;
+						vg.InterpolationMode = InterpolationMode.NearestNeighbor;
+						vg.PixelOffsetMode = PixelOffsetMode.HighQuality;
+						DrawingArea_Paint(DrawingArea, new PaintEventArgs(vg, new Rectangle(0, 0, renderW, renderH)));
+
+						using (Graphics g = Graphics.FromImage(bmp))
+						{
+							g.Clear(Color.FromArgb(47, 79, 79));
+							g.SmoothingMode = SmoothingMode.None;
+							g.InterpolationMode = InterpolationMode.NearestNeighbor;
+							g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+							using (SolidBrush background = new SolidBrush(Color.FromArgb(60, 70, 70, 70)))
+								g.FillRectangle(background, offsetX, offsetY, drawW, drawH);
+
+							using (Pen framePen = new Pen(Color.FromArgb(120, 180, 180, 180), 1f))
+								g.DrawRectangle(framePen, offsetX, offsetY, drawW, drawH);
+
+							g.DrawImage(viewport, new Rectangle(offsetX, offsetY, drawW, drawH), new Rectangle(0, 0, renderW, renderH), GraphicsUnit.Pixel);
+						}
+					}
+				}
+				finally
+				{
+					previewCaptureMode = false;
+					DrawingArea.Size = oldDrawingSize;
+					zoom = oldZoom;
+					showGrid = oldShowGrid;
+					showDSScreen = oldShowDSScreen;
+					ignoreMouse = oldIgnoreMouse;
+					UpdateScrollbars();
+					ScrollEditorPixel(new Point(oldH, oldV));
+					UpdateScrollbars();
+				}
+			}
+			catch
+			{
+				try
+				{
+					using (Graphics g = Graphics.FromImage(bmp))
+						g.Clear(Color.FromArgb(47, 79, 79));
+				}
+				catch { }
+				return bmp;
+			}
+
+			return bmp;
+		}
+
+		private RectangleF GetRenderableBounds()
+		{
+			float minX = float.MaxValue;
+			float minY = float.MaxValue;
+			float maxX = float.MinValue;
+			float maxY = float.MinValue;
+			bool hasContent = false;
+
+			Action<RectangleF> includeRect = rect =>
+			{
+				if (rect.Width <= 0 || rect.Height <= 0)
+					return;
+
+				if (!hasContent)
+				{
+					minX = rect.Left;
+					minY = rect.Top;
+					maxX = rect.Right;
+					maxY = rect.Bottom;
+					hasContent = true;
+				}
+				else
+				{
+					if (rect.Left < minX) minX = rect.Left;
+					if (rect.Top < minY) minY = rect.Top;
+					if (rect.Right > maxX) maxX = rect.Right;
+					if (rect.Bottom > maxY) maxY = rect.Bottom;
+				}
+			};
+
+			for (int tx = 0; tx < 512; tx++)
+			{
+				for (int ty = 0; ty < 256; ty++)
+				{
+					int tile = Level.levelTilemap[tx, ty];
+					if (tile != 0 && tile != -1)
+						includeRect(new RectangleF(tx * 16, ty * 16, 16, 16));
+				}
+			}
+
+			foreach (NSMBStageObj sprite in Level.Sprites)
+			{
+				Rectangle rect = sprite.GetRenderBounds();
+				includeRect(new RectangleF(rect.X, rect.Y, Math.Max(1, rect.Width), Math.Max(1, rect.Height)));
+			}
+
+			foreach (NSMBEntrance entrance in Level.Entrances)
+				includeRect(new RectangleF(entrance.x, entrance.y, Math.Max(1, entrance.width), Math.Max(1, entrance.height)));
+
+			foreach (NSMBView view in Level.Views)
+				includeRect(new RectangleF(view.X, view.Y, Math.Max(1, view.Width), Math.Max(1, view.Height)));
+
+			foreach (NSMBView zone in Level.Zones)
+				includeRect(new RectangleF(zone.X, zone.Y, Math.Max(1, zone.Width), Math.Max(1, zone.Height)));
+
+			if (!hasContent)
+				return new RectangleF(0f, 0f, 512f, 256f);
+
+			float margin = 32f;
+			return RectangleF.FromLTRB(minX - margin, minY - margin, maxX + margin, maxY + margin);
+		}
+
+		private void DrawTilesToGraphics(Graphics g, RectangleF bounds)
+		{
+			int startX = Math.Max(0, (int)Math.Floor(bounds.Left / 16f));
+			int endX = Math.Min(511, (int)Math.Ceiling(bounds.Right / 16f));
+			int startY = Math.Max(0, (int)Math.Floor(bounds.Top / 16f));
+			int endY = Math.Min(255, (int)Math.Ceiling(bounds.Bottom / 16f));
+
+			Rectangle srcRect = new Rectangle(0, 0, 16, 16);
+			Rectangle destRect = new Rectangle(0, 0, 16, 16);
+
+			for (int tx = startX; tx <= endX; tx++)
+			{
+				for (int ty = startY; ty <= endY; ty++)
+				{
+					int t = Level.levelTilemap[tx, ty];
+					if (t == 0 || t == -1)
+						continue;
+
+					int tileset = 0;
+					if (t >= 256 * 4)
+					{
+						t -= 256 * 4;
+						tileset = 2;
+					}
+					else if (t >= 256)
+					{
+						t -= 256;
+						tileset = 1;
+					}
+
+					srcRect.X = (t % 16) * 16;
+					srcRect.Y = (t / 16) * 16;
+					destRect.X = tx * 16;
+					destRect.Y = ty * 16;
+
+					g.CompositingMode = CompositingMode.SourceCopy;
+					g.DrawImage(GFX.Tilesets[tileset].Map16Buffer, destRect, srcRect, GraphicsUnit.Pixel);
+
+					if (!GFX.Tilesets[tileset].UseOverrides)
+						continue;
+
+					int t2 = GFX.Tilesets[tileset].Overrides[t];
+					if (t2 <= 0)
+						continue;
+
+					srcRect.X = t2 * 16;
+					srcRect.Y = 0;
+					g.CompositingMode = CompositingMode.SourceOver;
+					g.DrawImage(GFX.Tilesets[tileset].OverrideBitmap, destRect, srcRect, GraphicsUnit.Pixel);
+				}
+			}
+
+			g.CompositingMode = CompositingMode.SourceOver;
+		}
 
 		public bool ProcessCmdKeyHack(ref Message msg, Keys keyData)
 		{

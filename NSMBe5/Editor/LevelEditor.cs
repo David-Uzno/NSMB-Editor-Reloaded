@@ -105,6 +105,27 @@ namespace NSMBe5 {
         private NSMBLevel Level;
         private NSMBGraphics GFX;
 
+        public Bitmap CaptureFullLevelPreview(int width, int height)
+        {
+            if (levelEditorControl1 == null)
+                return null;
+
+            try
+            {
+                levelEditorControl1.updateTileCache(true);
+                levelEditorControl1.repaint();
+                this.Update();
+                levelEditorControl1.Update();
+                for (int i = 0; i < 3; i++)
+                    Application.DoEvents();
+                return levelEditorControl1.CreateFullLevelPreview(width, height);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         private UserControl SelectedPanel;
 
         public void SetPanel(UserControl np)

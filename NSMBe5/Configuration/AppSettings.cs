@@ -22,6 +22,7 @@ namespace NSMBe5.Configuration
         public bool EnableRomPlugin { get; set; } = false;
         public string EnabledPlugins { get; set; } = "";
         public string RecentFiles { get; set; } = "";
+        public int LevelListingPreviewMode { get; set; } = 1;
 
         /// <summary>
         /// Creates a new instance with default values
