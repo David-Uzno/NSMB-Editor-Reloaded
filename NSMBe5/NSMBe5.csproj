@@ -40,6 +40,9 @@
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <AutoUnify>true</AutoUnify>
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -133,6 +136,10 @@
       <HintPath>$(NuGetPackageRoot)system.memory\4.5.5\lib\net461\System.Memory.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Buffers">
+      <HintPath>$(NuGetPackageRoot)system.buffers\4.5.1\lib\net461\System.Buffers.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Runtime.CompilerServices.Unsafe">
       <HintPath>$(NuGetPackageRoot)system.runtime.compilerservices.unsafe\4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
       <Private>True</Private>
@@ -201,6 +208,10 @@
     <None Include="$(NuGetPackageRoot)system.memory\4.5.5\lib\net461\System.Memory.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>System.Memory.dll</TargetPath>
+    </None>
+    <None Include="$(NuGetPackageRoot)system.buffers\4.5.1\lib\net461\System.Buffers.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>System.Buffers.dll</TargetPath>
     </None>
     <None Include="$(NuGetPackageRoot)system.runtime.compilerservices.unsafe\4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -277,6 +288,10 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+
+  <Target Name="CopyCustomExeConfig" AfterTargets="AfterBuild" Condition="Exists('$(MSBuildProjectDirectory)\\App.config')">
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\App.config" DestinationFiles="$(TargetPath).config" OverwriteReadOnlyFiles="true" />
+  </Target>
 
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

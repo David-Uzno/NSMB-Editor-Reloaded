@@ -7,16 +7,55 @@ namespace NSMBe5
 {
     public partial class LevelChooser
     {
+        private bool TryRunXdelta(string xdeltaExe, string arguments, out string errorOutput)
+        {
+            errorOutput = string.Empty;
+
+            using (Process process = new Process())
+            {
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.FileName = xdeltaExe;
+                process.StartInfo.Arguments = arguments;
+                process.StartInfo.CreateNoWindow = false;
+                process.StartInfo.RedirectStandardError = true;
+                process.StartInfo.RedirectStandardOutput = true;
+
+                process.Start();
+                string stdOut = process.StandardOutput.ReadToEnd();
+                string stdErr = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                {
+                    errorOutput = string.IsNullOrWhiteSpace(stdErr) ? stdOut : stdErr;
+                    if (string.IsNullOrWhiteSpace(errorOutput))
+                    {
+                        errorOutput = "xdelta3 terminó con código de salida " + process.ExitCode + ".";
+                    }
+
+                    return false;
+                }
+
+                if (!string.IsNullOrWhiteSpace(stdErr))
+                {
+                    errorOutput = stdErr;
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
         private void Xdelta_export_Click(object sender, EventArgs e)
         {
             string xdeltaExe = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Runtime", "Tooling", "xdelta3.exe");
             if (!File.Exists(xdeltaExe))
             {
-                MessageBox.Show("No se encontró xdelta3.exe en Runtime\\Tooling.", LanguageManager.Get("SpriteData", "ErrorTitle"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Could not find xdelta3.exe in Runtime\\Tooling.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            MessageBox.Show(LanguageManager.Get("Patch", "XSelectROM") + LanguageManager.Get("Patch", "XRestartAfterApplied"), LanguageManager.Get("Patch", "XExport"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("Please select a clean NSMB ROM file. After applying the patch, you will need to restart NSMBe.", "Export XDelta Patch", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             OpenFileDialog cleanROM_openFileDialog = new OpenFileDialog
             {
@@ -41,32 +80,18 @@ namespace NSMBe5
                 ROM.close();
 
                 string str = " -f -s \"" + cleanROM_openFileDialog.FileName + "\" \"" + Properties.Settings.Default.ROMPath + "\" \"" + xdelta_saveFileDialog.FileName + "\"";
-                Process process = new Process();
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.FileName = xdeltaExe;
-                process.StartInfo.Arguments = str;
-                process.StartInfo.CreateNoWindow = true;
-                process.StartInfo.RedirectStandardError = true;
-                process.Start();
-                string end = process.StandardError.ReadToEnd();
-                if (end == "")
+                if (TryRunXdelta(xdeltaExe, str, out string errorOutput))
+                {
                     MessageBox.Show("Patch created successfully!", "Success!");
+                }
                 else
-                    MessageBox.Show(end, "Something went wrong!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-                process.WaitForExit();
+                {
+                    MessageBox.Show(errorOutput, "Something went wrong!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("An unexpected exception has occured!\nDetails:\n" + ex, LanguageManager.Get("SpriteData", "ErrorTitle"), MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                Process process2 = new Process();
-                process2.StartInfo.FileName = Application.ExecutablePath;
-                process2.StartInfo.Arguments = "\"" + Properties.Settings.Default.ROMPath + "\"";
-                process2.Start();
-                Application.Exit();
+                MessageBox.Show("An unexpected exception has occurred!\nDetails:\n" + ex, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -75,15 +100,15 @@ namespace NSMBe5
             string xdeltaExe = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Runtime", "Tooling", "xdelta3.exe");
             if (!File.Exists(xdeltaExe))
             {
-                MessageBox.Show("No se encontró xdelta3.exe en Runtime\\Tooling.", LanguageManager.Get("SpriteData", "ErrorTitle"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Could not find xdelta3.exe in Runtime\\Tooling.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            DialogResult result = MessageBox.Show("All of the ROM contents will be replaced with the XDelta patch, unlike the NSMBe patches, this one overwrites the ROM entirely!\n\nNSMBe is going to restart after the import has finished.\n\nDo you still want to contiue?", LanguageManager.Get("General", "Warning"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            DialogResult result = MessageBox.Show("All of the ROM contents will be replaced with the XDelta patch. Unlike NSMBe patches, this will overwrite the ROM entirely!\n\nYou will need to close and reopen NSMBe after the import has finished.\n\nDo you still want to continue?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (result == DialogResult.No)
                 return;
 
-            MessageBox.Show(LanguageManager.Get("Patch", "XSelectROM"), LanguageManager.Get("Patch", "XImport"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("Please select a clean NSMB ROM file.", "Import XDelta Patch", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             OpenFileDialog cleanROM_openFileDialog = new OpenFileDialog
             {
@@ -108,36 +133,18 @@ namespace NSMBe5
                 ROM.close();
 
                 string str = " -d -f -s \"" + cleanROM_openFileDialog.FileName + "\" \"" + xdelta_openFileDialog.FileName + "\" \"" + Properties.Settings.Default.ROMPath + "\"";
-                Process process = new Process();
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.FileName = xdeltaExe;
-                process.StartInfo.Arguments = str;
-                process.StartInfo.CreateNoWindow = true;
-                process.StartInfo.RedirectStandardError = true;
-                process.Start();
-                string end = process.StandardError.ReadToEnd();
-                if (end == "")
-                    MessageBox.Show("ROM patched successfully, restarting NSMBe...");
+                if (TryRunXdelta(xdeltaExe, str, out string errorOutput))
+                {
+                    MessageBox.Show("ROM patched successfully. Please close and reopen NSMBe to reload the ROM.", "Success!", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
                 else
-                    MessageBox.Show(end + "\n\nRestarting NSMBe!", "Something went wrong!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-                process.WaitForExit();
-
-                Process process2 = new Process();
-                process2.StartInfo.FileName = Application.ExecutablePath;
-                process2.StartInfo.Arguments = "\"" + Properties.Settings.Default.ROMPath + "\"";
-                process2.Start();
-                Application.Exit();
+                {
+                    MessageBox.Show(errorOutput + "\n\nPlease close and reopen NSMBe before continuing.", "Something went wrong!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("An unexpected exception has occured, restarting!\nDetails:\n" + ex, LanguageManager.Get("SpriteData", "ErrorTitle"), MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-                Process process2 = new Process();
-                process2.StartInfo.FileName = Application.ExecutablePath;
-                process2.StartInfo.Arguments = "\"" + Properties.Settings.Default.ROMPath + "\"";
-                process2.Start();
-                Application.Exit();
+                MessageBox.Show("An unexpected exception has occurred!\nDetails:\n" + ex, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
