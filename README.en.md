@@ -1,5 +1,5 @@
 # NSMB Editor Reloaded
-[Versión en Español](README.md)
+[Versión en Español](README.md).
 
 Welcome to the new version of NSMBe, the level editor par excellence for New Super Mario Bros. on Nintendo DS!
 
@@ -14,15 +14,14 @@ This project revamps and modernizes the classic interface of the editor, making 
 
 
 ## Downloads
-There are currently no downloads available. If you want to use the new version, you need to compile the editor yourself.
+The latest version of the editor is available on the [Releases page](https://github.com/David-Uzno/NSMB-Editor-Reloaded/releases).
 
-### Quick build guide
+### Compiling
+You can also compile the source code to obtain experimental versions of the editor:
+
 1. Clone this repository to your local machine.
-2. On Windows, open `NSMBe5.sln` with Visual Studio Community and select "Build Solution". On Linux, make sure you have Mono installed and run `msbuild NSMBe5.sln` from the terminal.
-3. The executable will be generated in the `bin/Debug` folder. Run the resulting file to start the editor.
-
-For older versions, you can check the [GitHub Release page](https://github.com/MammaMiaTeam/NSMB-Editor/releases/latest/).
-
+2. On Windows, open the `NSMBe5.sln` file with Visual Studio Community and select "Build Solution". On Linux, ensure you have Mono installed and run `msbuild NSMBe5.sln` from the terminal.
+3. The executable will be generated in the `bin/Debug` folder. Run the resulting file to launch the editor.
 
 ## Requirements
 - Windows: [.NET Framework 4.7.2](https://dotnet.microsoft.com/en-us/download/dotnet-framework/net472)
